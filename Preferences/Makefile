@@ -4,7 +4,7 @@ TARGET = iphone:clang:11.2:11.2
 include $(THEOS)/makefiles/common.mk
 
 BUNDLE_NAME = NetworkSpeed13Prefs
-NetworkSpeed13Prefs_FILES = NSPAppearanceSettings.m NSPRootListController.xm
+NetworkSpeed13Prefs_FILES = NSPAppearanceSettings.m NSPRootHeaderView.mm NSPRootListController.xm
 NetworkSpeed13Prefs_INSTALL_PATH = /Library/PreferenceBundles
 NetworkSpeed13Prefs_FRAMEWORKS = UIKit
 NetworkSpeed13Prefs_PRIVATE_FRAMEWORKS = Preferences
