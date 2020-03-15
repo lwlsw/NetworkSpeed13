@@ -5,6 +5,7 @@ TARGET = iphone:clang:13.2:13.2
 INSTALL_TARGET_PROCESSES = SpringBoard
 
 include $(THEOS)/makefiles/common.mk
+GO_EASY_ON_ME = 1
 
 TWEAK_NAME = NetworkSpeed13
 NetworkSpeed13_FILES = NetworkSpeed13.xm

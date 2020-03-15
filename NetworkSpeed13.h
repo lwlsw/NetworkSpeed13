@@ -9,7 +9,7 @@ static BOOL shouldUpdateSpeedLabel;
 
 static long oldUpSpeed = 0, oldDownSpeed = 0;
 
-static NSString *_Nullable cachedString;
+static NSString *cachedString;
 
 typedef struct
 {
@@ -17,7 +17,7 @@ typedef struct
     uint32_t outputBytes;
 } UpDownBytes;
 
-HBPreferences *_Nullable pref;
+HBPreferences *pref;
 
 BOOL enabled;
 
@@ -32,10 +32,10 @@ long fontSize;
 long alignment;
 
 @interface _UIStatusBarForegroundView: UIView
-@property(nonatomic, retain) UILabel *_Nullable speedLabel;
+@property(nonatomic, retain) UILabel *speedLabel;
 @end
 
 @interface SBCoverSheetPresentationManager: NSObject
-+ (id _Nullable )sharedInstance;
++ (id)sharedInstance;
 - (BOOL)isPresented;
 @end

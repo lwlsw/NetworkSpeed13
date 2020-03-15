@@ -113,20 +113,30 @@ static NSMutableString* formattedString()
 	@autoreleasepool
 	{
 		pref = [[HBPreferences alloc] initWithIdentifier: @"com.johnzaro.networkspeed13prefs"];
+		[pref registerDefaults:
+		@{
+			@"enabled": @NO,
+			@"locationX": @292,
+			@"locationY": @32,
+			@"width": @82,
+			@"height": @12,
+			@"fontSize": @8,
+			@"alignment": @1
+    	}];
 
-		[pref registerBool: &enabled default: YES forKey: @"enabled"];
-
+		enabled = [pref boolForKey: @"enabled"];
+		
 		if(enabled)
 		{
-			[pref registerFloat: &locationX default: 292 forKey: @"locationX"];
-			[pref registerFloat: &locationY default: 32 forKey: @"locationY"];
+			locationX = [pref floatForKey: @"locationX"];
+			locationY = [pref floatForKey: @"locationY"];
 			
-			[pref registerFloat: &width default: 82 forKey: @"width"];
-			[pref registerFloat: &height default: 12 forKey: @"height"];
+			width = [pref floatForKey: @"width"];
+			height = [pref floatForKey: @"height"];
 
-			[pref registerInteger: &fontSize default: 8 forKey: @"fontSize"];
+			fontSize = [pref integerForKey: @"fontSize"];
 			
-			[pref registerInteger: &alignment default: 1 forKey: @"alignment"];
+			alignment = [pref integerForKey: @"alignment"];
 
 			[NSTimer scheduledTimerWithTimeInterval: 1.0 repeats: YES block: ^(NSTimer *timer)
 			{
