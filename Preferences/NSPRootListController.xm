@@ -75,12 +75,25 @@
 
 - (void)reset: (PSSpecifier*)specifier
 {
-    [[[HBPreferences alloc] initWithIdentifier: @"com.johnzaro.networkspeed13prefs"] removeAllObjects];
+    UIAlertController *reset = [UIAlertController
+        alertControllerWithTitle: @"NetworkSpeed13"
+		message: @"Do you really want to Reset All Settings?"
+		preferredStyle: UIAlertControllerStyleAlert];
+	UIAlertAction *confirmAction = [UIAlertAction actionWithTitle: @"Confirm" style: UIAlertActionStyleDestructive handler:
+        ^(UIAlertAction * action)
+        {
+            [[[HBPreferences alloc] initWithIdentifier: @"com.johnzaro.networkspeed13prefs"] removeAllObjects];
 
-    NSFileManager *manager = [NSFileManager defaultManager];
-    [manager removeItemAtPath:@"/var/mobile/Library/Preferences/com.johnzaro.networkspeed13prefs.plist" error: nil];
+            NSFileManager *manager = [NSFileManager defaultManager];
+            [manager removeItemAtPath:@"/var/mobile/Library/Preferences/com.johnzaro.networkspeed13prefs.plist" error: nil];
 
-    [self respring];
+            [self respring];
+        }];
+
+	UIAlertAction *cancelAction = [UIAlertAction actionWithTitle: @"Cancel" style: UIAlertActionStyleCancel handler: nil];
+	[reset addAction: confirmAction];
+	[reset addAction: cancelAction];
+	[self presentViewController: reset animated: YES completion: nil];
 }
 
 - (void)respring

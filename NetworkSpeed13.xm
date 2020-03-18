@@ -1,5 +1,33 @@
 #import "NetworkSpeed13.h"
 
+#import <Cephei/HBPreferences.h>
+#import <ifaddrs.h>
+#import <net/if.h>
+
+static const long KILOBYTES = 1 << 10;
+static const long MEGABYTES = 1 << 20;
+
+static BOOL shouldUpdateSpeedLabel;
+
+static long oldUpSpeed = 0, oldDownSpeed = 0;
+
+static NSString *cachedString;
+
+typedef struct
+{
+    uint32_t inputBytes;
+    uint32_t outputBytes;
+} UpDownBytes;
+
+static HBPreferences *pref;
+static BOOL enabled;
+static double locationX;
+static double locationY;
+static double width;
+static double height;
+static long fontSize;
+static long alignment;
+
 // Got some help from similar network speed tweaks by julioverne & n3d1117
 
 NSString* formatSpeed(long bytes)
