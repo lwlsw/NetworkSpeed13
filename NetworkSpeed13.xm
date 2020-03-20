@@ -27,6 +27,7 @@ static double width;
 static double height;
 static long fontSize;
 static long alignment;
+static double updateInterval;
 
 // Got some help from similar network speed tweaks by julioverne & n3d1117
 
@@ -72,12 +73,12 @@ static NSMutableString* formattedString()
 		NSMutableString* string = [[NSMutableString alloc] init];
 		
 		UpDownBytes upDownBytes = getUpDownBytes();
-		long upDiff = upDownBytes.outputBytes - oldUpSpeed;
-		long downDiff = upDownBytes.inputBytes - oldDownSpeed;
+		long upDiff = (upDownBytes.outputBytes - oldUpSpeed) / updateInterval;
+		long downDiff = (upDownBytes.inputBytes - oldDownSpeed) / updateInterval;
 		oldUpSpeed = upDownBytes.outputBytes;
 		oldDownSpeed = upDownBytes.inputBytes;
 
-		if(upDiff < 2 * KILOBYTES && downDiff < 2 * KILOBYTES)
+		if(upDiff < 2 * KILOBYTES && downDiff < 2 * KILOBYTES || upDiff > 1.000 * MEGABYTES && downDiff > 1.000 * MEGABYTES)
 		{
 			shouldUpdateSpeedLabel = NO;
 			return nil;
@@ -112,7 +113,7 @@ static NSMutableString* formattedString()
 			
 			self.speedLabel.adjustsFontSizeToFitWidth = NO;
 
-			[NSTimer scheduledTimerWithTimeInterval: 1.1 repeats: YES block: ^(NSTimer *timer)
+			[NSTimer scheduledTimerWithTimeInterval: (updateInterval + 0.1) repeats: YES block: ^(NSTimer *timer)
 			{
 				if(![[%c(SBCoverSheetPresentationManager) sharedInstance] isPresented] && self && self.speedLabel)
 				{
@@ -149,7 +150,8 @@ static NSMutableString* formattedString()
 			@"width": @82,
 			@"height": @12,
 			@"fontSize": @8,
-			@"alignment": @1
+			@"alignment": @1,
+			@"updateInterval": @1.0
     	}];
 
 		enabled = [pref boolForKey: @"enabled"];
@@ -165,8 +167,10 @@ static NSMutableString* formattedString()
 			fontSize = [pref integerForKey: @"fontSize"];
 			
 			alignment = [pref integerForKey: @"alignment"];
+			
+			updateInterval = [pref doubleForKey: @"updateInterval"];
 
-			[NSTimer scheduledTimerWithTimeInterval: 1.0 repeats: YES block: ^(NSTimer *timer)
+			[NSTimer scheduledTimerWithTimeInterval: updateInterval repeats: YES block: ^(NSTimer *timer)
 			{
 				if(![[%c(SBCoverSheetPresentationManager) sharedInstance] isPresented]) cachedString = formattedString();
 			}];

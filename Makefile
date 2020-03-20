@@ -9,7 +9,7 @@ GO_EASY_ON_ME = 1
 
 TWEAK_NAME = NetworkSpeed13
 NetworkSpeed13_FILES = NetworkSpeed13.xm
-NetworkSpeed13_CFLAGS = -fobjc-arc
+NetworkSpeed13_CFLAGS = -fobjc-arc -Wno-logical-op-parentheses
 NetworkSpeed13_EXTRA_FRAMEWORKS += Cephei
 
 include $(THEOS_MAKE_PATH)/tweak.mk
