@@ -21,6 +21,7 @@ typedef struct
 
 static HBPreferences *pref;
 static BOOL enabled;
+static BOOL showAlways;
 static double locationX;
 static double locationY;
 static double width;
@@ -78,7 +79,7 @@ static NSMutableString* formattedString()
 		oldUpSpeed = upDownBytes.outputBytes;
 		oldDownSpeed = upDownBytes.inputBytes;
 
-		if(upDiff < 2 * KILOBYTES && downDiff < 2 * KILOBYTES || upDiff > 1.000 * MEGABYTES && downDiff > 1.000 * MEGABYTES)
+		if(!showAlways && (upDiff < 2 * KILOBYTES && downDiff < 2 * KILOBYTES) || upDiff > 1000 * MEGABYTES && downDiff > 1000 * MEGABYTES)
 		{
 			shouldUpdateSpeedLabel = NO;
 			return nil;
@@ -145,6 +146,7 @@ static NSMutableString* formattedString()
 		[pref registerDefaults:
 		@{
 			@"enabled": @NO,
+			@"showAlways": @NO,
 			@"locationX": @292,
 			@"locationY": @32,
 			@"width": @82,
@@ -155,7 +157,6 @@ static NSMutableString* formattedString()
     	}];
 
 		enabled = [pref boolForKey: @"enabled"];
-		
 		if(enabled)
 		{
 			locationX = [pref floatForKey: @"locationX"];
@@ -167,6 +168,8 @@ static NSMutableString* formattedString()
 			fontSize = [pref integerForKey: @"fontSize"];
 			
 			alignment = [pref integerForKey: @"alignment"];
+
+			showAlways = [pref boolForKey: @"showAlways"];
 			
 			updateInterval = [pref doubleForKey: @"updateInterval"];
 
