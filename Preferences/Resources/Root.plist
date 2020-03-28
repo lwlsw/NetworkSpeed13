@@ -15,6 +15,10 @@
 		<dict>
         	<key>cell</key>
 			<string>PSGroupCell</string>
+			<key>footerText</key>
+			<string>All Settings Below Except The 'Update Interval' Are Updated Dynamically And Do Not Require A Respring. Disabling The Tweak Requires A Respring.</string>
+			<key>footerAlignment</key>
+			<integer>1</integer>
         </dict>
 		<dict>
 			<key>cell</key>
@@ -47,6 +51,8 @@
 			<string>locationX</string>
 			<key>label</key>
 			<string>Location X</string>
+			<key>PostNotification</key>
+			<string>com.johnzaro.networkspeed13prefs/reloadprefs</string>
 		</dict>
 		<dict>
 			<key>cell</key>
@@ -61,6 +67,8 @@
 			<string>locationY</string>
 			<key>label</key>
 			<string>Location Y</string>
+			<key>PostNotification</key>
+			<string>com.johnzaro.networkspeed13prefs/reloadprefs</string>
 		</dict>
 		<dict>
 			<key>cell</key>
@@ -81,6 +89,8 @@
 			<string>width</string>
 			<key>label</key>
 			<string>Width</string>
+			<key>PostNotification</key>
+			<string>com.johnzaro.networkspeed13prefs/reloadprefs</string>
 		</dict>
 		<dict>
 			<key>cell</key>
@@ -95,6 +105,8 @@
 			<string>height</string>
 			<key>label</key>
 			<string>Height</string>
+			<key>PostNotification</key>
+			<string>com.johnzaro.networkspeed13prefs/reloadprefs</string>
 		</dict>
 		<dict>
 			<key>cell</key>
@@ -115,6 +127,65 @@
 			<string>fontSize</string>
 			<key>label</key>
 			<string>Font Size</string>
+			<key>PostNotification</key>
+			<string>com.johnzaro.networkspeed13prefs/reloadprefs</string>
+		</dict>
+		<dict>
+			<key>cell</key>
+			<string>PSSwitchCell</string>
+			<key>default</key>
+			<false/>
+			<key>defaults</key>
+			<string>com.johnzaro.networkspeed13prefs</string>
+			<key>key</key>
+			<string>boldFont</string>
+			<key>label</key>
+			<string>Bold Font</string>
+			<key>PostNotification</key>
+			<string>com.johnzaro.networkspeed13prefs/reloadprefs</string>
+		</dict>
+		<dict>
+			<key>cell</key>
+			<string>PSGroupCell</string>
+			<key>label</key>
+			<string>Custom Text Color</string>
+		</dict>
+		<dict>
+			<key>cell</key>
+			<string>PSSwitchCell</string>
+			<key>default</key>
+			<false/>
+			<key>defaults</key>
+			<string>com.johnzaro.networkspeed13prefs</string>
+			<key>key</key>
+			<string>customColorEnabled</string>
+			<key>label</key>
+			<string>Enable Custom Text Color</string>
+			<key>PostNotification</key>
+			<string>com.johnzaro.networkspeed13prefs/reloadprefs</string>
+		</dict>
+		<dict>
+			<key>cell</key>
+			<string>PSLinkCell</string>
+			<key>cellClass</key>
+			<string>SparkColourPickerCell</string>
+			<key>libsparkcolourpicker</key>
+			<dict>
+				<key>defaults</key>
+				<string>com.johnzaro.networkspeed13prefs.colors</string>
+				<key>key</key>
+				<string>customColor</string>
+				<key>fallback</key>
+				<string>#FF9400</string>
+				<key>alpha</key>
+				<false/>
+				<key>PostNotification</key>
+				<string>com.johnzaro.networkspeed13prefs/reloadprefs</string>
+			</dict>
+			<key>label</key>
+			<string>Custom Color</string>
+			<key>key</key>
+			<string>customColor</string>
 		</dict>
 		<dict>
 			<key>cell</key>
@@ -145,6 +216,8 @@
 			</array>
 			<key>label</key>
 			<string>Alignment</string>
+			<key>PostNotification</key>
+			<string>com.johnzaro.networkspeed13prefs/reloadprefs</string>
 		</dict>
 		<dict>
 			<key>cell</key>
@@ -163,6 +236,8 @@
 			<string>showAlways</string>
 			<key>label</key>
 			<string>Always Show Speed</string>
+			<key>PostNotification</key>
+			<string>com.johnzaro.networkspeed13prefs/reloadprefs</string>
 		</dict>
 		<dict>
 			<key>cell</key>

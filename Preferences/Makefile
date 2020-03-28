@@ -8,6 +8,7 @@ NetworkSpeed13Prefs_FILES = NSPAppearanceSettings.m NSPRootHeaderView.mm NSPRoot
 NetworkSpeed13Prefs_INSTALL_PATH = /Library/PreferenceBundles
 NetworkSpeed13Prefs_FRAMEWORKS = UIKit
 NetworkSpeed13Prefs_PRIVATE_FRAMEWORKS = Preferences
+NetworkSpeed13Prefs_LIBRARIES = sparkcolourpicker
 NetworkSpeed13Prefs_CFLAGS = -fobjc-arc -Wno-deprecated-declarations
 NetworkSpeed13Prefs_EXTRA_FRAMEWORKS = Cephei CepheiPrefs
 

@@ -1,4 +1,5 @@
 #import "NSPRootListController.h"
+#import "SparkColourPickerView.h"
 #import "spawn.h"
 
 @implementation NSPRootListController

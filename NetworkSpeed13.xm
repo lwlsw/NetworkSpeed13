@@ -1,18 +1,24 @@
 #import "NetworkSpeed13.h"
 
+#import "SparkColourPickerUtils.h"
 #import <Cephei/HBPreferences.h>
 #import <ifaddrs.h>
 #import <net/if.h>
 
+#define DegreesToRadians(degrees) (degrees * M_PI / 180)
+#define IS_iPAD ([[UIDevice currentDevice] userInterfaceIdiom] == UIUserInterfaceIdiomPad)
+
 static const long KILOBYTES = 1 << 10;
 static const long MEGABYTES = 1 << 20;
 
+static double screenWidth;
+static double screenHeight;
+static UIDeviceOrientation orientationOld;
+
+__strong static id networkSpeedObject;
+
 static BOOL shouldUpdateSpeedLabel;
-
 static long oldUpSpeed = 0, oldDownSpeed = 0;
-
-static NSString *cachedString;
-
 typedef struct
 {
     uint32_t inputBytes;
@@ -27,6 +33,9 @@ static double locationY;
 static double width;
 static double height;
 static long fontSize;
+static BOOL boldFont;
+static BOOL customColorEnabled;
+static UIColor *customColor;
 static long alignment;
 static double updateInterval;
 
@@ -71,7 +80,7 @@ static NSMutableString* formattedString()
 {
 	@autoreleasepool
 	{
-		NSMutableString* string = [[NSMutableString alloc] init];
+		NSMutableString* mutableString = [[NSMutableString alloc] init];
 		
 		UpDownBytes upDownBytes = getUpDownBytes();
 		long upDiff = (upDownBytes.outputBytes - oldUpSpeed) / updateInterval;
@@ -79,64 +88,237 @@ static NSMutableString* formattedString()
 		oldUpSpeed = upDownBytes.outputBytes;
 		oldDownSpeed = upDownBytes.inputBytes;
 
-		if(!showAlways && (upDiff < 2 * KILOBYTES && downDiff < 2 * KILOBYTES) || upDiff > 1000 * MEGABYTES && downDiff > 1000 * MEGABYTES)
+		if(!showAlways && (upDiff < 2 * KILOBYTES && downDiff < 2 * KILOBYTES) || upDiff > 500 * MEGABYTES && downDiff > 500 * MEGABYTES)
 		{
 			shouldUpdateSpeedLabel = NO;
 			return nil;
 		}
 		else shouldUpdateSpeedLabel = YES;
 
-		// [string appendString: @"↑99.99M/s ↓99.99M/s"]; (this is for debugging)
-		[string appendString: @"↑"];
-		[string appendString: formatSpeed(upDiff)];
-		[string appendString: @" ↓"];
-		[string appendString: formatSpeed(downDiff)];
+		// [mutableString appendString: @"↑99.99M/s ↓99.99M/s"]; (this is for debugging)
+		[mutableString appendString: @"↑"];
+		[mutableString appendString: formatSpeed(upDiff)];
+		[mutableString appendString: @" ↓"];
+		[mutableString appendString: formatSpeed(downDiff)];
 		
-		return string;
+		return [mutableString copy];
 	}
 }
 
-%hook _UIStatusBarForegroundView
-
-%property(nonatomic, retain) UILabel *speedLabel;
-
--(id)initWithFrame: (CGRect)arg1
+static void orientationChanged()
 {
-	@autoreleasepool
+	if(IS_iPAD && networkSpeedObject) 
+		[networkSpeedObject orientationChanged];
+}
+
+static void loadDeviceScreenDimensions()
+{
+	UIDeviceOrientation orientation = [[UIApplication sharedApplication] _frontMostAppOrientation];
+	if(orientation == UIDeviceOrientationLandscapeLeft || orientation == UIDeviceOrientationLandscapeRight)
 	{
-		self = %orig;
+		screenWidth = [[UIScreen mainScreen] bounds].size.height;
+		screenHeight = [[UIScreen mainScreen] bounds].size.width;
+	}
+	else
+	{
+		screenWidth = [[UIScreen mainScreen] bounds].size.width;
+		screenHeight = [[UIScreen mainScreen] bounds].size.height;
+	}
+}
 
-		if(!self.speedLabel)
+@implementation NetworkSpeed
+
+	- (id)init
+	{
+		self = [super init];
+		if(self)
 		{
-			self.speedLabel = [[UILabel alloc] initWithFrame: CGRectMake(locationX, locationY, width, height)];
-			self.speedLabel.font = [UIFont systemFontOfSize: fontSize];
-			self.speedLabel.textAlignment = alignment;
-			
-			self.speedLabel.adjustsFontSizeToFitWidth = NO;
-
-			[NSTimer scheduledTimerWithTimeInterval: (updateInterval + 0.1) repeats: YES block: ^(NSTimer *timer)
+			@try
 			{
-				if(![[%c(SBCoverSheetPresentationManager) sharedInstance] isPresented] && self && self.speedLabel)
-				{
-					if(!shouldUpdateSpeedLabel || [self.superview.superview.superview isKindOfClass: %c(CCUIStatusBar)])
-					{
-						if(!self.speedLabel.hidden) self.speedLabel.hidden = YES;
-					}
-					else
-					{
-						self.speedLabel.hidden = NO;
-						self.speedLabel.text = cachedString;
-					}
-				}
-				else if(!self.speedLabel.hidden) self.speedLabel.hidden = YES;
-			}];
-			[self addSubview: self.speedLabel];
+				networkSpeedWindow = [[UIWindow alloc] initWithFrame: CGRectMake(0, 0, width, height)];
+				[networkSpeedWindow setWindowLevel: 1000];
+				[networkSpeedWindow setHidden: NO];
+				[networkSpeedWindow setAlpha: 1];
+				[networkSpeedWindow _setSecure: YES];
+				[networkSpeedWindow setUserInteractionEnabled: NO];
+				
+				networkSpeedLabel = [[UILabel alloc]initWithFrame: CGRectMake(0, 0, width, height)];
+				[networkSpeedLabel setNumberOfLines: 1];
+				if(boldFont) [networkSpeedLabel setFont: [UIFont boldSystemFontOfSize: fontSize]];
+				else [networkSpeedLabel setFont: [UIFont systemFontOfSize: fontSize]];
+				[networkSpeedLabel setTextAlignment: alignment];
+				[(UIView *)networkSpeedWindow addSubview: networkSpeedLabel];
+
+				if(customColorEnabled) [self updateColor: customColor];
+				
+				[self orientationChanged];
+
+				[NSTimer scheduledTimerWithTimeInterval: updateInterval target: self selector: @selector(updateText) userInfo: nil repeats: YES];
+
+				CFNotificationCenterAddObserver(CFNotificationCenterGetDarwinNotifyCenter(), NULL, (CFNotificationCallback)&orientationChanged, CFSTR("com.apple.springboard.screenchanged"), NULL, 0);
+				CFNotificationCenterAddObserver(CFNotificationCenterGetLocalCenter(), NULL, (CFNotificationCallback)&orientationChanged, CFSTR("UIWindowDidRotateNotification"), NULL, CFNotificationSuspensionBehaviorCoalesce);
+			}
+			@catch (NSException *e) {}
 		}
 		return self;
 	}
+
+	- (void)updateFrame
+	{
+		[NSObject cancelPreviousPerformRequestsWithTarget: self selector: @selector(_updateFrame) object: nil];
+		[self performSelector: @selector(_updateFrame) withObject: nil afterDelay: 0.3];
+	}
+
+	- (void)_updateFrame
+	{
+		[networkSpeedWindow setFrame: CGRectMake(0, 0, width, height)];
+		[networkSpeedLabel setFrame: CGRectMake(0, 0, width, height)];
+		if(boldFont) [networkSpeedLabel setFont: [UIFont boldSystemFontOfSize: fontSize]];
+		else [networkSpeedLabel setFont: [UIFont systemFontOfSize: fontSize]];
+		[networkSpeedLabel setTextAlignment: alignment];
+		[self orientationChanged];
+	}
+
+	- (void)updateText
+	{
+		if(networkSpeedWindow && networkSpeedLabel)
+		{
+			if(![[%c(SBCoverSheetPresentationManager) sharedInstance] isPresented] && ![[%c(SBControlCenterController) sharedInstance] isVisible])
+			{
+				NSString *speed = formattedString();
+				if(shouldUpdateSpeedLabel)
+				{
+					[networkSpeedWindow setHidden: NO];
+					[networkSpeedLabel setText: speed];
+				}
+				else [networkSpeedWindow setHidden: YES];
+			}
+			else [networkSpeedWindow setHidden: YES];
+		}
+	}
+
+	- (void)updateColor: (UIColor*)color
+	{
+		[networkSpeedLabel setTextColor: color];
+	}
+
+	- (void)orientationChanged
+	{
+		if(!IS_iPAD)
+		{
+			CGRect frame = [networkSpeedWindow frame];
+			frame.origin.x = locationX;
+			frame.origin.y = locationY;
+			[networkSpeedWindow setFrame: frame];
+		}
+		else
+		{
+			UIDeviceOrientation orientation = [[UIApplication sharedApplication] _frontMostAppOrientation];
+			if(orientation == orientationOld)
+				return;
+			
+			CGAffineTransform newTransform;
+			int newLocationX;
+			int newLocationY;
+
+			switch (orientation)
+			{
+				case UIDeviceOrientationLandscapeRight:
+				{
+					newLocationX = locationY;
+					newLocationY = (screenHeight - width - locationX);
+					newTransform = CGAffineTransformMakeRotation(-DegreesToRadians(90));
+					break;
+				}
+				case UIDeviceOrientationLandscapeLeft:
+				{
+					newLocationX = (screenWidth - height - locationY);
+					newLocationY = locationX;
+					newTransform = CGAffineTransformMakeRotation(DegreesToRadians(90));
+					break;
+				}
+				case UIDeviceOrientationPortraitUpsideDown:
+				{
+					newLocationX = screenWidth - locationX - width;
+					newLocationY = (screenHeight - height - locationY);
+					newTransform = CGAffineTransformMakeRotation(DegreesToRadians(180));
+					break;
+				}
+				case UIDeviceOrientationPortrait:
+				default:
+				{
+					newLocationX = locationX;
+					newLocationY = locationY;
+					newTransform = CGAffineTransformMakeRotation(DegreesToRadians(0));
+					break;
+				}
+			}
+
+			[UIView animateWithDuration: 0.3f animations:
+			^{
+				[networkSpeedWindow setTransform: newTransform];
+				CGRect frame = [networkSpeedWindow frame];
+				frame.origin.x = newLocationX;
+				frame.origin.y = newLocationY;
+				[networkSpeedWindow setFrame: frame];
+				orientationOld = orientation;
+			} completion: nil];
+		}
+	}
+
+@end
+
+%hook SpringBoard
+
+- (void)applicationDidFinishLaunching: (id)application
+{
+	%orig;
+
+	loadDeviceScreenDimensions();
+	if(!networkSpeedObject) 
+		networkSpeedObject = [[NetworkSpeed alloc] init];
 }
 
 %end
+
+%hook _UIStatusBar
+
+-(void)setForegroundColor: (UIColor*)color
+{
+	%orig;
+	
+	if(!customColorEnabled && networkSpeedObject && [self styleAttributes] && [[self styleAttributes] imageTintColor]) 
+		[networkSpeedObject updateColor: [[self styleAttributes] imageTintColor]];
+}
+
+%end
+
+static void settingsChanged(CFNotificationCenterRef center, void *observer, CFStringRef name, const void *object, CFDictionaryRef userInfo)
+{
+	if(!pref) pref = [[HBPreferences alloc] initWithIdentifier: @"com.johnzaro.networkspeed13prefs"];
+	enabled = [pref boolForKey: @"enabled"];
+	locationX = [pref floatForKey: @"locationX"];
+	locationY = [pref floatForKey: @"locationY"];
+	width = [pref floatForKey: @"width"];
+	height = [pref floatForKey: @"height"];
+	fontSize = [pref integerForKey: @"fontSize"];
+	boldFont = [pref boolForKey: @"boldFont"];
+	customColorEnabled = [pref boolForKey: @"customColorEnabled"];
+	alignment = [pref integerForKey: @"alignment"];
+	showAlways = [pref boolForKey: @"showAlways"];
+	updateInterval = [pref doubleForKey: @"updateInterval"];
+
+	if(customColorEnabled)
+	{
+		NSDictionary *preferencesDictionary = [NSDictionary dictionaryWithContentsOfFile: @"/var/mobile/Library/Preferences/com.johnzaro.networkspeed13prefs.colors.plist"];
+		customColor = [SparkColourPickerUtils colourWithString: [preferencesDictionary objectForKey: @"customColor"] withFallback: @"#FF9400"];
+
+		if(networkSpeedObject) [networkSpeedObject updateColor: customColor];
+	}
+
+	if(networkSpeedObject)
+		[networkSpeedObject updateFrame];
+}
 
 %ctor
 {
@@ -152,31 +334,17 @@ static NSMutableString* formattedString()
 			@"width": @82,
 			@"height": @12,
 			@"fontSize": @8,
+			@"boldFont": @NO,
+			@"customColorEnabled": @NO,
 			@"alignment": @1,
 			@"updateInterval": @1.0
     	}];
 
-		enabled = [pref boolForKey: @"enabled"];
+		settingsChanged(NULL, NULL, NULL, NULL, NULL);
+
 		if(enabled)
 		{
-			locationX = [pref floatForKey: @"locationX"];
-			locationY = [pref floatForKey: @"locationY"];
-			
-			width = [pref floatForKey: @"width"];
-			height = [pref floatForKey: @"height"];
-
-			fontSize = [pref integerForKey: @"fontSize"];
-			
-			alignment = [pref integerForKey: @"alignment"];
-
-			showAlways = [pref boolForKey: @"showAlways"];
-			
-			updateInterval = [pref doubleForKey: @"updateInterval"];
-
-			[NSTimer scheduledTimerWithTimeInterval: updateInterval repeats: YES block: ^(NSTimer *timer)
-			{
-				if(![[%c(SBCoverSheetPresentationManager) sharedInstance] isPresented]) cachedString = formattedString();
-			}];
+			CFNotificationCenterAddObserver(CFNotificationCenterGetDarwinNotifyCenter(), NULL, settingsChanged, CFSTR("com.johnzaro.networkspeed13prefs/reloadprefs"), NULL, CFNotificationSuspensionBehaviorCoalesce);
 
 			%init;
 		}
