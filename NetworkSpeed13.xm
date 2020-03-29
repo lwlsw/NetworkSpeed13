@@ -6,7 +6,6 @@
 #import <net/if.h>
 
 #define DegreesToRadians(degrees) (degrees * M_PI / 180)
-#define IS_iPAD ([[UIDevice currentDevice] userInterfaceIdiom] == UIUserInterfaceIdiomPad)
 
 static const long KILOBYTES = 1 << 10;
 static const long MEGABYTES = 1 << 20;
@@ -28,8 +27,11 @@ typedef struct
 static HBPreferences *pref;
 static BOOL enabled;
 static BOOL showAlways;
-static double locationX;
-static double locationY;
+static double portraitX;
+static double portraitY;
+static double landscapeX;
+static double landscapeY;
+static BOOL followDeviceOrientation;
 static double width;
 static double height;
 static long fontSize;
@@ -107,8 +109,8 @@ static NSMutableString* formattedString()
 
 static void orientationChanged()
 {
-	if(IS_iPAD && networkSpeedObject) 
-		[networkSpeedObject orientationChanged];
+	if(followDeviceOrientation && networkSpeedObject) 
+		[networkSpeedObject updateOrientation];
 }
 
 static void loadDeviceScreenDimensions()
@@ -142,16 +144,11 @@ static void loadDeviceScreenDimensions()
 				[networkSpeedWindow _setSecure: YES];
 				[networkSpeedWindow setUserInteractionEnabled: NO];
 				
-				networkSpeedLabel = [[UILabel alloc]initWithFrame: CGRectMake(0, 0, width, height)];
+				networkSpeedLabel = [[UILabel alloc] initWithFrame: CGRectMake(0, 0, width, height)];
 				[networkSpeedLabel setNumberOfLines: 1];
-				if(boldFont) [networkSpeedLabel setFont: [UIFont boldSystemFontOfSize: fontSize]];
-				else [networkSpeedLabel setFont: [UIFont systemFontOfSize: fontSize]];
-				[networkSpeedLabel setTextAlignment: alignment];
 				[(UIView *)networkSpeedWindow addSubview: networkSpeedLabel];
 
-				if(customColorEnabled) [self updateColor: customColor];
-				
-				[self orientationChanged];
+				[self updateFrame];
 
 				[NSTimer scheduledTimerWithTimeInterval: updateInterval target: self selector: @selector(updateText) userInfo: nil repeats: YES];
 
@@ -171,12 +168,99 @@ static void loadDeviceScreenDimensions()
 
 	- (void)_updateFrame
 	{
-		[networkSpeedWindow setFrame: CGRectMake(0, 0, width, height)];
-		[networkSpeedLabel setFrame: CGRectMake(0, 0, width, height)];
+		[self updateNetworkSpeedLabelProperties];
+		[self updateNetworkSpeedSize];
+
+		orientationOld = nil;
+		[self updateOrientation];
+	}
+
+	- (void)updateNetworkSpeedLabelProperties
+	{
 		if(boldFont) [networkSpeedLabel setFont: [UIFont boldSystemFontOfSize: fontSize]];
 		else [networkSpeedLabel setFont: [UIFont systemFontOfSize: fontSize]];
+
 		[networkSpeedLabel setTextAlignment: alignment];
-		[self orientationChanged];
+
+		if(customColorEnabled)
+			[networkSpeedObject updateTextColor: customColor];
+	}
+
+	- (void)updateNetworkSpeedSize
+	{
+		CGRect frame = [networkSpeedLabel frame];
+		frame.size.width = width;
+		frame.size.height = height;
+		[networkSpeedLabel setFrame: frame];
+
+		frame = [networkSpeedWindow frame];
+		frame.size.width = width;
+		frame.size.height = height;
+		[networkSpeedWindow setFrame: frame];
+	}
+
+	- (void)updateOrientation
+	{
+		if(!followDeviceOrientation)
+		{
+			CGRect frame = [networkSpeedWindow frame];
+			frame.origin.x = portraitX;
+			frame.origin.y = portraitY;
+			[networkSpeedWindow setFrame: frame];
+		}
+		else
+		{
+			UIDeviceOrientation orientation = [[UIApplication sharedApplication] _frontMostAppOrientation];
+			if(orientation == orientationOld)
+				return;
+			
+			CGAffineTransform newTransform;
+			int newLocationX;
+			int newLocationY;
+
+			switch (orientation)
+			{
+				case UIDeviceOrientationLandscapeRight:
+				{
+					newLocationX = landscapeY;
+					newLocationY = screenHeight - width - landscapeX;
+					newTransform = CGAffineTransformMakeRotation(-DegreesToRadians(90));
+					break;
+				}
+				case UIDeviceOrientationLandscapeLeft:
+				{
+					newLocationX = screenWidth - height - landscapeY;
+					newLocationY = landscapeX;
+					newTransform = CGAffineTransformMakeRotation(DegreesToRadians(90));
+					break;
+				}
+				case UIDeviceOrientationPortraitUpsideDown:
+				{
+					newLocationX = screenWidth - portraitX - width;
+					newLocationY = screenHeight - height - portraitY;
+					newTransform = CGAffineTransformMakeRotation(DegreesToRadians(180));
+					break;
+				}
+				case UIDeviceOrientationPortrait:
+				default:
+				{
+					newLocationX = portraitX;
+					newLocationY = portraitY;
+					newTransform = CGAffineTransformMakeRotation(DegreesToRadians(0));
+					break;
+				}
+			}
+
+			[UIView animateWithDuration: 0.3f animations:
+			^{
+				[networkSpeedWindow setTransform: newTransform];
+				CGRect frame = [networkSpeedWindow frame];
+				frame.origin.x = newLocationX;
+				frame.origin.y = newLocationY;
+				[networkSpeedWindow setFrame: frame];
+				orientationOld = orientation;
+			} completion: nil];
+		}
 	}
 
 	- (void)updateText
@@ -197,73 +281,9 @@ static void loadDeviceScreenDimensions()
 		}
 	}
 
-	- (void)updateColor: (UIColor*)color
+	- (void)updateTextColor: (UIColor*)color
 	{
 		[networkSpeedLabel setTextColor: color];
-	}
-
-	- (void)orientationChanged
-	{
-		if(!IS_iPAD)
-		{
-			CGRect frame = [networkSpeedWindow frame];
-			frame.origin.x = locationX;
-			frame.origin.y = locationY;
-			[networkSpeedWindow setFrame: frame];
-		}
-		else
-		{
-			UIDeviceOrientation orientation = [[UIApplication sharedApplication] _frontMostAppOrientation];
-			if(orientation == orientationOld)
-				return;
-			
-			CGAffineTransform newTransform;
-			int newLocationX;
-			int newLocationY;
-
-			switch (orientation)
-			{
-				case UIDeviceOrientationLandscapeRight:
-				{
-					newLocationX = locationY;
-					newLocationY = (screenHeight - width - locationX);
-					newTransform = CGAffineTransformMakeRotation(-DegreesToRadians(90));
-					break;
-				}
-				case UIDeviceOrientationLandscapeLeft:
-				{
-					newLocationX = (screenWidth - height - locationY);
-					newLocationY = locationX;
-					newTransform = CGAffineTransformMakeRotation(DegreesToRadians(90));
-					break;
-				}
-				case UIDeviceOrientationPortraitUpsideDown:
-				{
-					newLocationX = screenWidth - locationX - width;
-					newLocationY = (screenHeight - height - locationY);
-					newTransform = CGAffineTransformMakeRotation(DegreesToRadians(180));
-					break;
-				}
-				case UIDeviceOrientationPortrait:
-				default:
-				{
-					newLocationX = locationX;
-					newLocationY = locationY;
-					newTransform = CGAffineTransformMakeRotation(DegreesToRadians(0));
-					break;
-				}
-			}
-
-			[UIView animateWithDuration: 0.3f animations:
-			^{
-				[networkSpeedWindow setTransform: newTransform];
-				CGRect frame = [networkSpeedWindow frame];
-				frame.origin.x = newLocationX;
-				frame.origin.y = newLocationY;
-				[networkSpeedWindow setFrame: frame];
-				orientationOld = orientation;
-			} completion: nil];
-		}
 	}
 
 @end
@@ -288,7 +308,7 @@ static void loadDeviceScreenDimensions()
 	%orig;
 	
 	if(!customColorEnabled && networkSpeedObject && [self styleAttributes] && [[self styleAttributes] imageTintColor]) 
-		[networkSpeedObject updateColor: [[self styleAttributes] imageTintColor]];
+		[networkSpeedObject updateTextColor: [[self styleAttributes] imageTintColor]];
 }
 
 %end
@@ -297,8 +317,11 @@ static void settingsChanged(CFNotificationCenterRef center, void *observer, CFSt
 {
 	if(!pref) pref = [[HBPreferences alloc] initWithIdentifier: @"com.johnzaro.networkspeed13prefs"];
 	enabled = [pref boolForKey: @"enabled"];
-	locationX = [pref floatForKey: @"locationX"];
-	locationY = [pref floatForKey: @"locationY"];
+	portraitX = [pref floatForKey: @"portraitX"];
+	portraitY = [pref floatForKey: @"portraitY"];
+	landscapeX = [pref floatForKey: @"landscapeX"];
+	landscapeY = [pref floatForKey: @"landscapeY"];
+	followDeviceOrientation = [pref boolForKey: @"followDeviceOrientation"];
 	width = [pref floatForKey: @"width"];
 	height = [pref floatForKey: @"height"];
 	fontSize = [pref integerForKey: @"fontSize"];
@@ -312,8 +335,6 @@ static void settingsChanged(CFNotificationCenterRef center, void *observer, CFSt
 	{
 		NSDictionary *preferencesDictionary = [NSDictionary dictionaryWithContentsOfFile: @"/var/mobile/Library/Preferences/com.johnzaro.networkspeed13prefs.colors.plist"];
 		customColor = [SparkColourPickerUtils colourWithString: [preferencesDictionary objectForKey: @"customColor"] withFallback: @"#FF9400"];
-
-		if(networkSpeedObject) [networkSpeedObject updateColor: customColor];
 	}
 
 	if(networkSpeedObject)
@@ -329,8 +350,11 @@ static void settingsChanged(CFNotificationCenterRef center, void *observer, CFSt
 		@{
 			@"enabled": @NO,
 			@"showAlways": @NO,
-			@"locationX": @292,
-			@"locationY": @32,
+			@"portraitX": @292,
+			@"portraitY": @32,
+			@"landscapeX": @735,
+			@"landscapeY": @32,
+			@"followDeviceOrientation": @NO,
 			@"width": @82,
 			@"height": @12,
 			@"fontSize": @8,

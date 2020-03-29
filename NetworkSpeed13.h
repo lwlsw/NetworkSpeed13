@@ -9,9 +9,10 @@
     UILabel *networkSpeedLabel;
 }
 - (id)init;
-- (void)orientationChanged;
+- (void)updateOrientation;
 - (void)updateFrame;
-- (void)updateColor:(UIColor *)color;
+- (void)updateNetworkSpeedSize;
+- (void)updateTextColor:(UIColor *)color;
 @end
 
 @interface UIWindow ()
