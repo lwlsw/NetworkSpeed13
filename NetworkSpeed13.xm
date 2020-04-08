@@ -267,7 +267,7 @@ static void loadDeviceScreenDimensions()
 	{
 		if(networkSpeedWindow && networkSpeedLabel)
 		{
-			if(![[%c(SBCoverSheetPresentationManager) sharedInstance] isPresented] && ![[%c(SBControlCenterController) sharedInstance] isVisible])
+			if(![[%c(SBCoverSheetPresentationManager) sharedInstance] isPresented])
 			{
 				NSString *speed = formattedString();
 				if(shouldUpdateSpeedLabel)

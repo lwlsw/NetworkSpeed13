@@ -16,7 +16,7 @@
         	<key>cell</key>
 			<string>PSGroupCell</string>
 			<key>footerText</key>
-			<string>All Settings Below Except The 'Update Interval' Are Updated Dynamically And Do Not Require A Respring. Disabling The Tweak Requires A Respring.</string>
+			<string>All Settings Below Except The 'Update Interval' Are Updated Dynamically And Do Not Require A Respring. Enabling / Disabling The Tweak Requires A Respring.</string>
 			<key>footerAlignment</key>
 			<integer>1</integer>
         </dict>
