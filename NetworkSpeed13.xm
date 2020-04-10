@@ -143,6 +143,7 @@ static void loadDeviceScreenDimensions()
 				[networkSpeedWindow setAlpha: 1];
 				[networkSpeedWindow _setSecure: YES];
 				[networkSpeedWindow setUserInteractionEnabled: NO];
+				[[networkSpeedWindow layer] setAnchorPoint: CGPointZero];
 				
 				networkSpeedLabel = [[UILabel alloc] initWithFrame: CGRectMake(0, 0, width, height)];
 				[networkSpeedLabel setNumberOfLines: 1];
@@ -223,21 +224,21 @@ static void loadDeviceScreenDimensions()
 				case UIDeviceOrientationLandscapeRight:
 				{
 					newLocationX = landscapeY;
-					newLocationY = screenHeight - width - landscapeX;
+					newLocationY = screenHeight - landscapeX;
 					newTransform = CGAffineTransformMakeRotation(-DegreesToRadians(90));
 					break;
 				}
 				case UIDeviceOrientationLandscapeLeft:
 				{
-					newLocationX = screenWidth - height - landscapeY;
+					newLocationX = screenWidth - landscapeY;
 					newLocationY = landscapeX;
 					newTransform = CGAffineTransformMakeRotation(DegreesToRadians(90));
 					break;
 				}
 				case UIDeviceOrientationPortraitUpsideDown:
 				{
-					newLocationX = screenWidth - portraitX - width;
-					newLocationY = screenHeight - height - portraitY;
+					newLocationX = screenWidth - portraitX;
+					newLocationY = screenHeight - portraitY;
 					newTransform = CGAffineTransformMakeRotation(DegreesToRadians(180));
 					break;
 				}
