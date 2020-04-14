@@ -30,3 +30,7 @@
 @interface _UIStatusBar : UIView
 @property(nonatomic, retain) _UIStatusBarStyleAttributes *styleAttributes;
 @end
+
+@interface CALayer ()
+- (void)setContinuousCorners:(BOOL)arg1;
+@end

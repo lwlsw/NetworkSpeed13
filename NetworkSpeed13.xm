@@ -7,6 +7,8 @@
 
 #define DegreesToRadians(degrees) (degrees * M_PI / 180)
 
+static const long KILOBITS = 1000;
+static const long MEGABITS = 1000000;
 static const long KILOBYTES = 1 << 10;
 static const long MEGABYTES = 1 << 20;
 
@@ -26,6 +28,16 @@ typedef struct
 
 static HBPreferences *pref;
 static BOOL enabled;
+static BOOL showUploadSpeed;
+static NSString *uploadPrefix;
+static BOOL showDownloadSpeed;
+static NSString *downloadPrefix;
+static NSString *separator;
+static long dataUnit;
+static BOOL backgroundColorEnabled;
+static float backgroundCornerRadius;
+static BOOL customBackgroundColorEnabled;
+static UIColor *customBackgroundColor;
 static BOOL showAlways;
 static double portraitX;
 static double portraitY;
@@ -36,8 +48,8 @@ static double width;
 static double height;
 static long fontSize;
 static BOOL boldFont;
-static BOOL customColorEnabled;
-static UIColor *customColor;
+static BOOL customTextColorEnabled;
+static UIColor *customTextColor;
 static long alignment;
 static double updateInterval;
 
@@ -45,9 +57,18 @@ static double updateInterval;
 
 NSString* formatSpeed(long bytes)
 {
-	if (bytes < KILOBYTES) return @"0K/s";
-	else if (bytes < MEGABYTES) return [NSString stringWithFormat:@"%.0fK/s", (double)bytes / KILOBYTES];
-	else return [NSString stringWithFormat:@"%.2fM/s", (double)bytes / MEGABYTES];
+	if(dataUnit == 0) // BYTES
+	{
+		if (bytes < KILOBYTES) return @"0KB/s";
+		else if (bytes < MEGABYTES) return [NSString stringWithFormat:@"%.0fKB/s", (double)bytes / KILOBYTES];
+		else return [NSString stringWithFormat:@"%.2fMB/s", (double)bytes / MEGABYTES];
+	}
+	else // BITS
+	{
+		if (bytes < KILOBITS) return @"0Kb/s";
+		else if (bytes < MEGABITS) return [NSString stringWithFormat:@"%.0fKb/s", (double)bytes / KILOBITS];
+		else return [NSString stringWithFormat:@"%.2fMb/s", (double)bytes / MEGABITS];
+	}
 }
 
 UpDownBytes getUpDownBytes()
@@ -97,11 +118,23 @@ static NSMutableString* formattedString()
 		}
 		else shouldUpdateSpeedLabel = YES;
 
-		// [mutableString appendString: @"↑99.99M/s ↓99.99M/s"]; (this is for debugging)
-		[mutableString appendString: @"↑"];
-		[mutableString appendString: formatSpeed(upDiff)];
-		[mutableString appendString: @" ↓"];
-		[mutableString appendString: formatSpeed(downDiff)];
+		if(dataUnit == 1) // BITS
+		{
+			upDiff *= 8;
+			downDiff *= 8;
+		}
+
+		if(showUploadSpeed)
+		{
+			[mutableString appendString: uploadPrefix];
+			[mutableString appendString: formatSpeed(upDiff)];
+		}
+		if(showDownloadSpeed)
+		{
+			if([mutableString length] > 0) [mutableString appendString: separator];
+			[mutableString appendString: downloadPrefix];
+			[mutableString appendString: formatSpeed(downDiff)];
+		}
 		
 		return [mutableString copy];
 	}
@@ -147,6 +180,7 @@ static void loadDeviceScreenDimensions()
 				
 				networkSpeedLabel = [[UILabel alloc] initWithFrame: CGRectMake(0, 0, width, height)];
 				[networkSpeedLabel setNumberOfLines: 1];
+				[[networkSpeedLabel layer] setMasksToBounds: YES];
 				[(UIView *)networkSpeedWindow addSubview: networkSpeedLabel];
 
 				[self updateFrame];
@@ -183,8 +217,19 @@ static void loadDeviceScreenDimensions()
 
 		[networkSpeedLabel setTextAlignment: alignment];
 
-		if(customColorEnabled)
-			[networkSpeedObject updateTextColor: customColor];
+		if(customTextColorEnabled)
+			[networkSpeedLabel setTextColor: customTextColor];
+		
+		if(!backgroundColorEnabled)
+			[networkSpeedLabel setBackgroundColor: [UIColor clearColor]];
+		else
+		{
+			[[networkSpeedLabel layer] setCornerRadius: backgroundCornerRadius];
+			[[networkSpeedLabel layer] setContinuousCorners: YES];
+			
+			if(customBackgroundColorEnabled)
+				[networkSpeedLabel setBackgroundColor: customBackgroundColor];
+		} 
 	}
 
 	- (void)updateNetworkSpeedSize
@@ -216,37 +261,36 @@ static void loadDeviceScreenDimensions()
 				return;
 			
 			CGAffineTransform newTransform;
-			int newLocationX;
-			int newLocationY;
+			CGRect frame = [networkSpeedWindow frame];
 
 			switch (orientation)
 			{
 				case UIDeviceOrientationLandscapeRight:
 				{
-					newLocationX = landscapeY;
-					newLocationY = screenHeight - landscapeX;
+					frame.origin.x = landscapeY;
+					frame.origin.y = screenHeight - landscapeX;
 					newTransform = CGAffineTransformMakeRotation(-DegreesToRadians(90));
 					break;
 				}
 				case UIDeviceOrientationLandscapeLeft:
 				{
-					newLocationX = screenWidth - landscapeY;
-					newLocationY = landscapeX;
+					frame.origin.x = screenWidth - landscapeY;
+					frame.origin.y = landscapeX;
 					newTransform = CGAffineTransformMakeRotation(DegreesToRadians(90));
 					break;
 				}
 				case UIDeviceOrientationPortraitUpsideDown:
 				{
-					newLocationX = screenWidth - portraitX;
-					newLocationY = screenHeight - portraitY;
+					frame.origin.x = screenWidth - portraitX;
+					frame.origin.y = screenHeight - portraitY;
 					newTransform = CGAffineTransformMakeRotation(DegreesToRadians(180));
 					break;
 				}
 				case UIDeviceOrientationPortrait:
 				default:
 				{
-					newLocationX = portraitX;
-					newLocationY = portraitY;
+					frame.origin.x = portraitX;
+					frame.origin.y = portraitY;
 					newTransform = CGAffineTransformMakeRotation(DegreesToRadians(0));
 					break;
 				}
@@ -255,9 +299,6 @@ static void loadDeviceScreenDimensions()
 			[UIView animateWithDuration: 0.3f animations:
 			^{
 				[networkSpeedWindow setTransform: newTransform];
-				CGRect frame = [networkSpeedWindow frame];
-				frame.origin.x = newLocationX;
-				frame.origin.y = newLocationY;
 				[networkSpeedWindow setFrame: frame];
 				orientationOld = orientation;
 			} completion: nil];
@@ -284,7 +325,18 @@ static void loadDeviceScreenDimensions()
 
 	- (void)updateTextColor: (UIColor*)color
 	{
-		[networkSpeedLabel setTextColor: color];
+		CGFloat r;
+    	[color getRed: &r green: nil blue: nil alpha: nil];
+		if(r == 0 || r == 1)
+		{
+			if(!customTextColorEnabled) [networkSpeedLabel setTextColor: color];
+			if(backgroundColorEnabled && !customBackgroundColorEnabled) 
+			{
+				if(r == 0) [networkSpeedLabel setBackgroundColor: [[UIColor whiteColor] colorWithAlphaComponent: 0.5]];
+				else [networkSpeedLabel setBackgroundColor: [[UIColor blackColor] colorWithAlphaComponent: 0.5]];
+			}	
+
+		}
 	}
 
 @end
@@ -308,7 +360,7 @@ static void loadDeviceScreenDimensions()
 {
 	%orig;
 	
-	if(!customColorEnabled && networkSpeedObject && [self styleAttributes] && [[self styleAttributes] imageTintColor]) 
+	if(networkSpeedObject && [self styleAttributes] && [[self styleAttributes] imageTintColor]) 
 		[networkSpeedObject updateTextColor: [[self styleAttributes] imageTintColor]];
 }
 
@@ -318,6 +370,15 @@ static void settingsChanged(CFNotificationCenterRef center, void *observer, CFSt
 {
 	if(!pref) pref = [[HBPreferences alloc] initWithIdentifier: @"com.johnzaro.networkspeed13prefs"];
 	enabled = [pref boolForKey: @"enabled"];
+	showUploadSpeed = [pref boolForKey: @"showUploadSpeed"];
+	uploadPrefix = [pref objectForKey: @"uploadPrefix"];
+	showDownloadSpeed = [pref boolForKey: @"showDownloadSpeed"];
+	downloadPrefix = [pref objectForKey: @"downloadPrefix"];
+	separator = [pref objectForKey: @"separator"];
+	dataUnit = [pref integerForKey: @"dataUnit"];
+	backgroundColorEnabled = [pref boolForKey: @"backgroundColorEnabled"];
+	backgroundCornerRadius = [pref floatForKey: @"backgroundCornerRadius"];
+	customBackgroundColorEnabled = [pref boolForKey: @"customBackgroundColorEnabled"];
 	portraitX = [pref floatForKey: @"portraitX"];
 	portraitY = [pref floatForKey: @"portraitY"];
 	landscapeX = [pref floatForKey: @"landscapeX"];
@@ -327,19 +388,23 @@ static void settingsChanged(CFNotificationCenterRef center, void *observer, CFSt
 	height = [pref floatForKey: @"height"];
 	fontSize = [pref integerForKey: @"fontSize"];
 	boldFont = [pref boolForKey: @"boldFont"];
-	customColorEnabled = [pref boolForKey: @"customColorEnabled"];
+	customTextColorEnabled = [pref boolForKey: @"customTextColorEnabled"];
 	alignment = [pref integerForKey: @"alignment"];
 	showAlways = [pref boolForKey: @"showAlways"];
 	updateInterval = [pref doubleForKey: @"updateInterval"];
 
-	if(customColorEnabled)
+	if(backgroundColorEnabled || customTextColorEnabled)
 	{
 		NSDictionary *preferencesDictionary = [NSDictionary dictionaryWithContentsOfFile: @"/var/mobile/Library/Preferences/com.johnzaro.networkspeed13prefs.colors.plist"];
-		customColor = [SparkColourPickerUtils colourWithString: [preferencesDictionary objectForKey: @"customColor"] withFallback: @"#FF9400"];
+		customBackgroundColor = [SparkColourPickerUtils colourWithString: [preferencesDictionary objectForKey: @"customBackgroundColor"] withFallback: @"#000000:0.50"];
+		customTextColor = [SparkColourPickerUtils colourWithString: [preferencesDictionary objectForKey: @"customTextColor"] withFallback: @"#FF9400"];
 	}
 
 	if(networkSpeedObject)
+	{
 		[networkSpeedObject updateFrame];
+		[networkSpeedObject updateText];
+	}
 }
 
 %ctor
@@ -351,16 +416,25 @@ static void settingsChanged(CFNotificationCenterRef center, void *observer, CFSt
 		@{
 			@"enabled": @NO,
 			@"showAlways": @NO,
-			@"portraitX": @292,
+			@"showUploadSpeed": @NO,
+			@"uploadPrefix": @"↑",
+			@"showDownloadSpeed": @NO,
+			@"downloadPrefix": @"↓",
+			@"separator": @" ",
+			@"dataUnit": @0,
+			@"backgroundColorEnabled": @NO,
+			@"backgroundCornerRadius": @6,
+			@"customBackgroundColorEnabled": @NO,
+			@"portraitX": @280,
 			@"portraitY": @32,
 			@"landscapeX": @735,
 			@"landscapeY": @32,
 			@"followDeviceOrientation": @NO,
-			@"width": @82,
+			@"width": @95,
 			@"height": @12,
 			@"fontSize": @8,
 			@"boldFont": @NO,
-			@"customColorEnabled": @NO,
+			@"customTextColorEnabled": @NO,
 			@"alignment": @1,
 			@"updateInterval": @1.0
     	}];
