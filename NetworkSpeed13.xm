@@ -28,6 +28,8 @@ typedef struct
 
 static HBPreferences *pref;
 static BOOL enabled;
+static BOOL showDownloadSpeedFirst;
+static BOOL showSecondSpeedInNewLine;
 static BOOL showUploadSpeed;
 static NSString *uploadPrefix;
 static BOOL showDownloadSpeed;
@@ -124,16 +126,28 @@ static NSMutableString* formattedString()
 			downDiff *= 8;
 		}
 
-		if(showUploadSpeed)
+		NSString *uploadText = [NSString stringWithFormat: @"%@%@", uploadPrefix, formatSpeed(upDiff)];
+		NSString *downloadText = [NSString stringWithFormat: @"%@%@", downloadPrefix, formatSpeed(downDiff)];
+
+		if(showDownloadSpeedFirst)
 		{
-			[mutableString appendString: uploadPrefix];
-			[mutableString appendString: formatSpeed(upDiff)];
+			if(showDownloadSpeed) [mutableString appendString: downloadText];
+			if(showUploadSpeed)
+			{
+				if(showSecondSpeedInNewLine) [mutableString appendString: @"\n"];
+				else if([mutableString length] > 0) [mutableString appendString: separator];
+				[mutableString appendString: uploadText];
+			}
 		}
-		if(showDownloadSpeed)
+		else
 		{
-			if([mutableString length] > 0) [mutableString appendString: separator];
-			[mutableString appendString: downloadPrefix];
-			[mutableString appendString: formatSpeed(downDiff)];
+			if(showUploadSpeed) [mutableString appendString: uploadText];
+			if(showDownloadSpeed)
+			{
+				if(showSecondSpeedInNewLine) [mutableString appendString: @"\n"];
+				else if([mutableString length] > 0) [mutableString appendString: separator];
+				[mutableString appendString: downloadText];
+			}
 		}
 		
 		return [mutableString copy];
@@ -189,7 +203,6 @@ static void loadDeviceScreenDimensions()
 				[[networkSpeedWindow layer] setAnchorPoint: CGPointZero];
 				
 				networkSpeedLabel = [[UILabelWithInsets alloc] initWithFrame: CGRectMake(0, 0, width, height)];
-				[networkSpeedLabel setNumberOfLines: 1];
 				[[networkSpeedLabel layer] setMasksToBounds: YES];
 				[(UIView *)networkSpeedWindow addSubview: networkSpeedLabel];
 
@@ -224,6 +237,8 @@ static void loadDeviceScreenDimensions()
 	{
 		if(boldFont) [networkSpeedLabel setFont: [UIFont boldSystemFontOfSize: fontSize]];
 		else [networkSpeedLabel setFont: [UIFont systemFontOfSize: fontSize]];
+
+		[networkSpeedLabel setNumberOfLines: showSecondSpeedInNewLine ? 2 : 1];
 
 		[networkSpeedLabel setTextAlignment: alignment];
 
@@ -380,6 +395,8 @@ static void settingsChanged(CFNotificationCenterRef center, void *observer, CFSt
 {
 	if(!pref) pref = [[HBPreferences alloc] initWithIdentifier: @"com.johnzaro.networkspeed13prefs"];
 	enabled = [pref boolForKey: @"enabled"];
+	showDownloadSpeedFirst = [pref boolForKey: @"showDownloadSpeedFirst"];
+	showSecondSpeedInNewLine = [pref boolForKey: @"showSecondSpeedInNewLine"];
 	showUploadSpeed = [pref boolForKey: @"showUploadSpeed"];
 	uploadPrefix = [pref objectForKey: @"uploadPrefix"];
 	showDownloadSpeed = [pref boolForKey: @"showDownloadSpeed"];
@@ -426,6 +443,8 @@ static void settingsChanged(CFNotificationCenterRef center, void *observer, CFSt
 		@{
 			@"enabled": @NO,
 			@"showAlways": @NO,
+			@"showDownloadSpeedFirst": @NO,
+			@"showSecondSpeedInNewLine": @NO,
 			@"showUploadSpeed": @NO,
 			@"uploadPrefix": @"↑",
 			@"showDownloadSpeed": @NO,
