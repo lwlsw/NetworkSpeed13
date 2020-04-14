@@ -161,6 +161,16 @@ static void loadDeviceScreenDimensions()
 	}
 }
 
+@implementation UILabelWithInsets
+
+- (void)drawTextInRect: (CGRect)rect
+{
+    UIEdgeInsets insets = {0, 5, 0, 5};
+    [super drawTextInRect: UIEdgeInsetsInsetRect(rect, insets)];
+}
+
+@end
+
 @implementation NetworkSpeed
 
 	- (id)init
@@ -178,7 +188,7 @@ static void loadDeviceScreenDimensions()
 				[networkSpeedWindow setUserInteractionEnabled: NO];
 				[[networkSpeedWindow layer] setAnchorPoint: CGPointZero];
 				
-				networkSpeedLabel = [[UILabel alloc] initWithFrame: CGRectMake(0, 0, width, height)];
+				networkSpeedLabel = [[UILabelWithInsets alloc] initWithFrame: CGRectMake(0, 0, width, height)];
 				[networkSpeedLabel setNumberOfLines: 1];
 				[[networkSpeedLabel layer] setMasksToBounds: YES];
 				[(UIView *)networkSpeedWindow addSubview: networkSpeedLabel];
@@ -229,7 +239,7 @@ static void loadDeviceScreenDimensions()
 			
 			if(customBackgroundColorEnabled)
 				[networkSpeedLabel setBackgroundColor: customBackgroundColor];
-		} 
+		}
 	}
 
 	- (void)updateNetworkSpeedSize

@@ -3,10 +3,13 @@
 - (BOOL)isPresented;
 @end
 
+@interface UILabelWithInsets : UILabel
+@end
+
 @interface NetworkSpeed: NSObject
 {
     UIWindow *networkSpeedWindow;
-    UILabel *networkSpeedLabel;
+    UILabelWithInsets *networkSpeedLabel;
 }
 - (id)init;
 - (void)updateOrientation;
