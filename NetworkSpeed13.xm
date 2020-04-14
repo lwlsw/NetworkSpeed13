@@ -393,7 +393,7 @@ static void settingsChanged(CFNotificationCenterRef center, void *observer, CFSt
 	showAlways = [pref boolForKey: @"showAlways"];
 	updateInterval = [pref doubleForKey: @"updateInterval"];
 
-	if(backgroundColorEnabled || customTextColorEnabled)
+	if(backgroundColorEnabled && customBackgroundColorEnabled || customTextColorEnabled)
 	{
 		NSDictionary *preferencesDictionary = [NSDictionary dictionaryWithContentsOfFile: @"/var/mobile/Library/Preferences/com.johnzaro.networkspeed13prefs.colors.plist"];
 		customBackgroundColor = [SparkColourPickerUtils colourWithString: [preferencesDictionary objectForKey: @"customBackgroundColor"] withFallback: @"#000000:0.50"];
