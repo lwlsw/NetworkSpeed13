@@ -38,7 +38,7 @@
 			<key>label</key>
 			<string>DISPLAY OPTIONS</string>
 			<key>footerText</key>
-			<string>'Show On Lock Screen' Will Show Speed While Device Is Unlocked. 'Always Show Speed' Will Show The Speed Even If No Data Transmission Is Happening</string>
+			<string>'Show On Lock Screen' Will Show Speed While Device Is Unlocked. 'Always Show Speed' Will Show The Speed Even If No Data Transmission Is Happening.</string>
 		</dict>
 		<dict>
 			<key>cell</key>
