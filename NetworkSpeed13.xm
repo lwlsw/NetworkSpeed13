@@ -28,6 +28,7 @@ typedef struct
 
 static HBPreferences *pref;
 static BOOL enabled;
+static BOOL showOnLockScreen;
 static BOOL showDownloadSpeedFirst;
 static BOOL showSecondSpeedInNewLine;
 static BOOL showUploadSpeed;
@@ -126,27 +127,30 @@ static NSMutableString* formattedString()
 			downDiff *= 8;
 		}
 
-		NSString *uploadText = [NSString stringWithFormat: @"%@%@", uploadPrefix, formatSpeed(upDiff)];
-		NSString *downloadText = [NSString stringWithFormat: @"%@%@", downloadPrefix, formatSpeed(downDiff)];
-
 		if(showDownloadSpeedFirst)
 		{
-			if(showDownloadSpeed) [mutableString appendString: downloadText];
+			if(showDownloadSpeed) [mutableString appendString: [NSString stringWithFormat: @"%@%@", downloadPrefix, formatSpeed(downDiff)]];
 			if(showUploadSpeed)
 			{
-				if(showSecondSpeedInNewLine) [mutableString appendString: @"\n"];
-				else if([mutableString length] > 0) [mutableString appendString: separator];
-				[mutableString appendString: uploadText];
+				if([mutableString length] > 0)
+				{
+					if(showSecondSpeedInNewLine) [mutableString appendString: @"\n"];
+					else [mutableString appendString: separator];
+				}
+				[mutableString appendString: [NSString stringWithFormat: @"%@%@", uploadPrefix, formatSpeed(upDiff)]];
 			}
 		}
 		else
 		{
-			if(showUploadSpeed) [mutableString appendString: uploadText];
+			if(showUploadSpeed) [mutableString appendString: [NSString stringWithFormat: @"%@%@", uploadPrefix, formatSpeed(upDiff)]];
 			if(showDownloadSpeed)
 			{
-				if(showSecondSpeedInNewLine) [mutableString appendString: @"\n"];
-				else if([mutableString length] > 0) [mutableString appendString: separator];
-				[mutableString appendString: downloadText];
+				if([mutableString length] > 0)
+				{
+					if(showSecondSpeedInNewLine) [mutableString appendString: @"\n"];
+					else [mutableString appendString: separator];
+				}
+				[mutableString appendString: [NSString stringWithFormat: @"%@%@", downloadPrefix, formatSpeed(downDiff)]];
 			}
 		}
 		
@@ -195,7 +199,6 @@ static void loadDeviceScreenDimensions()
 			@try
 			{
 				networkSpeedWindow = [[UIWindow alloc] initWithFrame: CGRectMake(0, 0, width, height)];
-				[networkSpeedWindow setWindowLevel: 1000];
 				[networkSpeedWindow setHidden: NO];
 				[networkSpeedWindow setAlpha: 1];
 				[networkSpeedWindow _setSecure: YES];
@@ -226,6 +229,9 @@ static void loadDeviceScreenDimensions()
 
 	- (void)_updateFrame
 	{
+		if(showOnLockScreen) [networkSpeedWindow setWindowLevel: 1050];
+		else [networkSpeedWindow setWindowLevel: 1000];
+
 		[self updateNetworkSpeedLabelProperties];
 		[self updateNetworkSpeedSize];
 
@@ -334,7 +340,7 @@ static void loadDeviceScreenDimensions()
 	{
 		if(networkSpeedWindow && networkSpeedLabel)
 		{
-			if(![[%c(SBCoverSheetPresentationManager) sharedInstance] isPresented])
+			if(![[%c(SBCoverSheetPresentationManager) sharedInstance] _isEffectivelyLocked])
 			{
 				NSString *speed = formattedString();
 				if(shouldUpdateSpeedLabel)
@@ -395,6 +401,7 @@ static void settingsChanged(CFNotificationCenterRef center, void *observer, CFSt
 {
 	if(!pref) pref = [[HBPreferences alloc] initWithIdentifier: @"com.johnzaro.networkspeed13prefs"];
 	enabled = [pref boolForKey: @"enabled"];
+	showOnLockScreen = [pref boolForKey: @"showOnLockScreen"];
 	showDownloadSpeedFirst = [pref boolForKey: @"showDownloadSpeedFirst"];
 	showSecondSpeedInNewLine = [pref boolForKey: @"showSecondSpeedInNewLine"];
 	showUploadSpeed = [pref boolForKey: @"showUploadSpeed"];
@@ -442,6 +449,7 @@ static void settingsChanged(CFNotificationCenterRef center, void *observer, CFSt
 		[pref registerDefaults:
 		@{
 			@"enabled": @NO,
+			@"showOnLockScreen": @NO,
 			@"showAlways": @NO,
 			@"showDownloadSpeedFirst": @NO,
 			@"showSecondSpeedInNewLine": @NO,

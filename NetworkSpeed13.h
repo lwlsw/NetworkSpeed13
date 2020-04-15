@@ -1,6 +1,6 @@
 @interface SBCoverSheetPresentationManager: NSObject
 + (id)sharedInstance;
-- (BOOL)isPresented;
+- (BOOL)_isEffectivelyLocked;
 @end
 
 @interface UILabelWithInsets : UILabel

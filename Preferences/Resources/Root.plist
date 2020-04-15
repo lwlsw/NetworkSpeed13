@@ -37,6 +37,8 @@
 			<string>PSGroupCell</string>
 			<key>label</key>
 			<string>DISPLAY OPTIONS</string>
+			<key>footerText</key>
+			<string>'Show On Lock Screen' Will Show Speed While Device Is Unlocked. 'Always Show Speed' Will Show The Speed Even If No Data Transmission Is Happening</string>
 		</dict>
 		<dict>
 			<key>cell</key>
@@ -119,6 +121,34 @@
 			<string>showSecondSpeedInNewLine</string>
 			<key>label</key>
 			<string>Show 2nd Speed In New Line</string>
+			<key>PostNotification</key>
+			<string>com.johnzaro.networkspeed13prefs/reloadprefs</string>
+		</dict>
+		<dict>
+			<key>cell</key>
+			<string>PSSwitchCell</string>
+			<key>default</key>
+			<false/>
+			<key>defaults</key>
+			<string>com.johnzaro.networkspeed13prefs</string>
+			<key>key</key>
+			<string>showOnLockScreen</string>
+			<key>label</key>
+			<string>Show On Lock Screen</string>
+			<key>PostNotification</key>
+			<string>com.johnzaro.networkspeed13prefs/reloadprefs</string>
+		</dict>
+		<dict>
+			<key>cell</key>
+			<string>PSSwitchCell</string>
+			<key>default</key>
+			<false/>
+			<key>defaults</key>
+			<string>com.johnzaro.networkspeed13prefs</string>
+			<key>key</key>
+			<string>showAlways</string>
+			<key>label</key>
+			<string>Always Show Speed</string>
 			<key>PostNotification</key>
 			<string>com.johnzaro.networkspeed13prefs/reloadprefs</string>
 		</dict>
@@ -385,7 +415,7 @@
 			<key>cell</key>
 			<string>PSGroupCell</string>
 			<key>label</key>
-			<string>FONT SIZE</string>
+			<string>TEXT FONT</string>
 		</dict>
 		<dict>
 			<key>cell</key>
@@ -464,7 +494,7 @@
 			<key>cell</key>
 			<string>PSGroupCell</string>
 			<key>label</key>
-			<string>ALIGNMENT</string>
+			<string>TEXT ALIGNMENT</string>
 		</dict>
 		<dict>
 			<key>cell</key>
@@ -489,26 +519,6 @@
 			</array>
 			<key>label</key>
 			<string>Alignment</string>
-			<key>PostNotification</key>
-			<string>com.johnzaro.networkspeed13prefs/reloadprefs</string>
-		</dict>
-		<dict>
-			<key>cell</key>
-			<string>PSGroupCell</string>
-			<key>label</key>
-			<string>WHEN TO SHOW</string>
-		</dict>
-		<dict>
-			<key>cell</key>
-			<string>PSSwitchCell</string>
-			<key>default</key>
-			<false/>
-			<key>defaults</key>
-			<string>com.johnzaro.networkspeed13prefs</string>
-			<key>key</key>
-			<string>showAlways</string>
-			<key>label</key>
-			<string>Always Show Speed</string>
 			<key>PostNotification</key>
 			<string>com.johnzaro.networkspeed13prefs/reloadprefs</string>
 		</dict>
