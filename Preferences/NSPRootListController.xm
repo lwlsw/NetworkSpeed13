@@ -87,6 +87,7 @@
 
             NSFileManager *manager = [NSFileManager defaultManager];
             [manager removeItemAtPath:@"/var/mobile/Library/Preferences/com.johnzaro.networkspeed13prefs.plist" error: nil];
+            [manager removeItemAtPath:@"/var/mobile/Library/Preferences/com.johnzaro.networkspeed13prefs.colors.plist" error: nil];
 
             [self respring];
         }];
